@@ -37,9 +37,9 @@ app.post('/game_end', (req,res) => {
     })
 })
 
-app.get("/show_rank", function(req, res){
+app.get("/show_rank", (req, res) => {
     var query = 'SELECT u.user_id, u.nickname, r.score FROM user AS u LEFT JOIN `rank` AS r ON u.user_id = r.user_id WHERE score > 0 ORDER BY score DESC LIMIT 10';
-    conn.query(query, function(err, rows, fields)
+    conn.query(query, (err, rows, fields) =>
     {
       if (err)
       {
