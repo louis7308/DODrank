@@ -38,7 +38,7 @@ app.post('/game_end', (req,res) => {
 })
 
 app.get("/show_rank", (req, res) => {
-    var query = 'SELECT u.user_id, u.nickname, r.score FROM user AS u LEFT JOIN `rank` AS r ON u.user_id = r.user_id WHERE score > 0 ORDER BY score DESC LIMIT 10';
+    const query = 'SELECT u.user_id, u.nickname, r.score FROM user AS u LEFT JOIN `rank` AS r ON u.user_id = r.user_id WHERE score > 0 ORDER BY score DESC LIMIT 10';
     conn.query(query, (err, rows, fields) =>
     {
       if (err)
@@ -55,11 +55,38 @@ app.get("/show_rank", (req, res) => {
           rank_arr.push(rows[temp]);
   
         var result_json = {};
-        result_json["data"] = rank_arr;
-        res.json(result_json);
+        result_json["data"] = rows;
+        console.log(result_json);
+        res.json(rows);
       }
     });
   });
+
+  app.post('/create_name', (req, res) => {
+    const id = req.body.id;
+    const check_query = 'SELECT user_id FROM user WHERE user_id = ?'
+    conn.query(check_query, id, (err, rows, field) => {
+      console.log('create rows : ',rows);
+      if(err) {
+        res.status(500).send('Internal Server Error');
+        console.log(err);
+        console.log('Error while performing Query.');
+      }
+      else {
+        let checkid = new Object();
+        checkid.tf =false;   
+
+        if(rows[0] == undefined) {
+          checkid.tf = true;
+          console.log('checkid: ', chekcid);
+          res.send(checkid);
+        } else {
+          checkid.tf = false; // 중복됨 사용x
+          res.send(checkid);  
+        }
+      }
+    })
+  })
 
 app.listen(3000, () => {
     console.log('Server listening : 3000');
