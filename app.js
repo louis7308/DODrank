@@ -1,66 +1,127 @@
 //const e = require('express');
 const express = require('express');
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
 const dotenv = require('dotenv').config()
 const dbconfig = require('./config/database');
 const app = express();
 const http = require('http');
-const port = 3000;
+const { release } = require('os');
+const port = 4000
 
-const conn = mysql.createConnection(dbconfig);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+let conn = mysql.createConnection(dbconfig);
+// let test = 'SELECT u.device_id, u.nickname, r.nickname, r.score FROM user AS u LEFT JOIN `rank` AS r ON u.nickname = r.nickname WHERE score > 0 ORDER BY score DESC';
+// const main = async () => { 
+//   for(let i = 0; i < 5; i++) {
+//   try {
+//     let connection1 = await pool.getConnection(async conn => conn)
+//     let row = await connection1.query(test);
+//     console.log(row[0]);
+//     connection1.release
 
-conn.connect((err) => {
-  if (!err) {
-    console.log("Database is connected ... \n\n");
-  } else {
-    console.log("Error connecting database ... \n\n");
-  }
-});
+//   } catch(err) {
+//     // console.log(err)
+//     return
+//   }
+// }
+// }
 
-app.post('/game_end', (req, res) => {
-  const user_id = req.body.id;
-  const user_score = req.body.score
-  console.log(user_id);
-  console.log(user_score);
-  const callGameEnd = 'CALL gameEnd(?, ?)';
-  conn.query(callGameEnd, [user_id, user_score], (err, rows, field) => {
-    if (err) {
-      res.status(500).send('game_end 에서 데이터보내는 도중 서버 오류');
-      console.log(err);
-      console.log('에러는 query쪽에서 동작하다가 났어');
-    }
-    else {
-      console.log('이것은 rows : ', rows);
-      res.send(rows);
-    }
 
-  })
-})
+
+
+
+
+
+
+
+
+
+// const test = conn.getConnection((err, connection) => {
+//   if (!err) {
+//     console.log("Database is connected ... \n\n");
+//   } else {
+//     console.log("Error connecting database ... \n\n");
+//   }
+// });
+ 
+// const test = pool.getConnection((err, conn) => {
+//     if (err) throw err;
+//     const test_query = 'SELECT u.device_id, u.nickname, r.nickname, r.score FROM user AS u LEFT JOIN `rank` AS r ON u.nickname = r.nickname WHERE score > 0 ORDER BY score DESC';
+
+//     conn.query(test_query, (error, results, fields) => {
+//       console.log(results);
+//       release();
+//     })
+//   })
+
+// app.post('/game_end', (req, res) => {
+//   const user_id = req.body.id;
+//   const user_score = req.body.score
+//   console.log(user_id);
+//   console.log(user_score);
+//   const callGameEnd = 'CALL gameEnd(?, ?)';
+//   conn.query(callGameEnd, [user_id, user_score], (err, rows, field) => {
+//     if (err) {
+//       res.status(500).send('game_end 에서 데이터보내는 도중 서버 오류');
+//       console.log(err);
+//       console.log('에러는 query쪽에서 동작하다가 났어');
+//     }
+//     else {
+//       console.log('이것은 rows : ', rows);
+//       res.send(rows);
+//     }
+
+//   })
+// })
 
 app.get("/show_rank", (req, res) => {
-  const query = 'SELECT u.device_id, u.nickname, r.nickname, r.score FROM user AS u LEFT JOIN `rank` AS r ON u.nickname = r.nickname WHERE score > 0 ORDER BY score DESC LIMIT 10';
-  conn.query(query, (err, rows, fields) => {
-    if (err) {
+  const query = 'SELECT u.device_id, u.nickname, r.nickname, r.score FROM user AS u LEFT JOIN `rank` AS r ON u.nickname = r.nickname WHERE score > 0 ORDER BY score DESC';
+
+  const rank = async () => { 
+    try {
+      let connection2 = await pool.getConnection(async conn1 => conn1)
+      let [row] = await connection2.query(query);
+      console.log('1', row[0]);
+        let rank_arr = [];
+        for (var temp = 0; temp < row.length; temp++)
+          rank_arr.push(row[temp]);
+
+        let result_json = {};
+        result_json["data"] = row;
+        console.log('test', result_json);
+
+        res.json(result_json);
+      connection2.release()
+    } catch(err) {
       res.status(500).send('show_rank 에서 서버 오류');
       console.log(err);
-      console.log('Error while performing Query.');
+      console.log('랭킹 서버에서 오류')
+      return
     }
-    else {
-      console.log('1', rows);
-      var rank_arr = [];
-      for (var temp = 0; temp < rows.length; temp++)
-        rank_arr.push(rows[temp]);
+  }
 
-      var result_json = {};
-      result_json["data"] = rows;
-      console.log(result_json);
-      res.json(result_json);
-    }
-  });
+  rank();
 });
+  //   pool.query(query, (err, rows, field) => {
+  //     if (err) {
+  //       res.status(500).send('show_rank 에서 서버 오류');
+  //       console.log(err);
+  //       console.log('Error while performing Query.');
+  //     }
+  //     else {
+  //       let rank_arr = [];
+  //       for (var temp = 0; temp < rows.length; temp++)
+  //         rank_arr.push(rows[temp]);
+
+  //       let result_json = {};
+  //       result_json["data"] = rows;
+  //       console.log(i, rows);
+
+  //       res.json(result_json);
+  //   };
+  // })
 
 
 
@@ -72,14 +133,11 @@ app.post("/create_name", (req, res) => {
   const insertQuery = 'INSERT INTO user (device_id, nickname) values(?,?)';
   const ranknick_query = 'INSERT INTO `rank` (nickname) values(?)';
   const skilcharnick_query = 'INSERT INTO skillcharactor (nickname) values(?)'
-  
-  conn.query(nickCheckQuery, [user_name], (err, rows, fields) => {
-    if (err) {
-      res.status(500).send('create_name 에서 닉넴 중복 체크 하다가 오류 났습니다.');
-      console.log(err);
-      console.log('Error while performing Query.');
-    }
-    else {
+
+  const create = async () => {
+    try {
+      let connection = await pool.getConnection(async conn1 => conn1)
+      let [row] = await connection2.query(query);
       if (rows.length == 0) {
         conn.query(insertQuery, [user_device, user_name], (err, rows, fields) => {
           if (err) {
@@ -89,14 +147,14 @@ app.post("/create_name", (req, res) => {
           }
           else {
             conn.query(ranknick_query, [user_name], (err, rows, fields) => {
-              if(err) {
+              if (err) {
                 res.status(500).send('랭킹테이블에도 닉네임을 추가하다가 오류 났습니다.');
                 console.log(err)
               }
               console.log('ranking 닉넴 succeedd')
               conn.query(skilcharnick_query, [user_name], (err, rows, field) => {
-                if(err) {
-                  res.status(500).send('랭킹테이블에도 닉네임을 추가하다가 오류 났습니다.');
+                if (err) {
+                  res.status(500).send('스킬테이블에도 닉네임을 추가하다가 오류 났습니다.');
                   console.log(err)
                 }
                 console.log('succeed skillcharactory');
@@ -115,8 +173,12 @@ app.post("/create_name", (req, res) => {
         res.json(result_json);
         console.log(result_json);
       }
-    }
-  });
+     } catch(err) {
+    res.status(500).send('create_name 에서 닉넴 중복 체크 하다가 오류 났습니다.');
+    console.log(err);
+    console.log('Error while performing Query.');
+  }
+  }
 });
 
 app.post('/device', (req, res) => {
@@ -142,11 +204,11 @@ app.post('/device', (req, res) => {
 })
 
 app.get('/dataload', (req, res) => {
-  const nickname = req.body.nickname;
-  const nicknamev2 = 'seung'
+  const nickname = req.body.device;
+  const device = '121e97a63411e2a7332decc5ecd5104287d116e6'
   console.log(req.body);
-  const dataload = 'SELECT * FROM user left join skillcharactor ON user.nickname = skillcharactor.nickname WHERE user.nickname = ?'
-  conn.query(dataload, nicknamev2, (err, rows, field) => {
+  const dataload = 'SELECT * FROM user left join skillcharactor ON user.nickname = skillcharactor.nickname WHERE user.device_id = ?'
+  conn.query(dataload, device, (err, rows, field) => {
     console.log(rows);
     if (err) {
       res.status(500).send('저장된 save 데이터를 읽는 도중 오류가 났습니다');
@@ -157,11 +219,11 @@ app.get('/dataload', (req, res) => {
         "highscore": rows[0].highscore,
         "coin": rows[0].coin,
         "character_level": {
-          "기사" : rows[0].기사,
-          "법사" : rows[0].법사
+          "기사": rows[0].기사,
+          "법사": rows[0].법사
         },
         "skill_level": {
-          "돌진" : rows[0].돌진,
+          "돌진": rows[0].돌진,
           "연속찌르기": rows[0].연속찌르기,
           "검기날리기": rows[0].검기날리기,
           "회전공격": rows[0].회전공격,
@@ -193,7 +255,7 @@ app.get('/datasave', (req, res) => {
   const coin = obj.coin;
   const 기사 = obj.character_level.기사
   const 법사 = obj.character_level.법사
-  const 돌진 = obj.character_level.돌진
+  const 돌진 = obj.skill_level.돌진
   const 연속찌르기 = obj.skill_level.연속찌르기
   const 회전공격 = obj.skill_level.회전공격
   const 검기날리기 = obj.skill_level.검기날리기
@@ -202,7 +264,7 @@ app.get('/datasave', (req, res) => {
   const 밀쳐내기 = obj.skill_level.밀쳐내기
   const 흘리기 = obj.skill_level.흘리기
   const 회복 = obj.skill_level.회복
-  
+
   const save_user = 'UPDATE user SET nickname = ?, coin = ?, highscore = ? WHERE nickname = ?'
   const save_skillcharactor = 'UPDATE skillcharactor SET 기사 = ?, 법사 = ?, 돌진 = ?, 연속찌르기 = ?,검기날리기 = ?, 회전공격 = ?, 내려찍기 = ?, 밀쳐내기 = ?, 흘리기 = ?, 회복 = ? WHERE nickname = ?'
 
