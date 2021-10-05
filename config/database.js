@@ -1,7 +1,6 @@
 module.exports = {
-    connectionLimit : 15,
+    connectionLimit : 1500,
     waitForConnections: true,
-    queueLimit: 0,
     host    : process.env.DB_HOST,
     user    : process.env.DB_USER,
     password: process.env.DB_PASSWORD,
